@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pymupdf
+langchain
+langchain-huggingface
+faiss-cpu
