@@ -4,3 +4,7 @@ pymupdf
 langchain
 langchain-huggingface
 faiss-cpu
+langchain-community
+mysql-connector-python
+sqlalchemy 
+pymysql
