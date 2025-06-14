@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageCircle, FileText } from 'lucide-react';
-import type { Document, ChatMessage } from './../pages/Index';
+import { Document, ChatMessage } from '../pages/Index';
 
 interface ChatInterfaceProps {
   selectedDocument: Document | null;

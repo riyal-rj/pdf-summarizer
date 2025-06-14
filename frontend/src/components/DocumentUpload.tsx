@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from 'react';
 import { Upload, FileText, X } from 'lucide-react';
 
@@ -7,8 +8,6 @@ interface DocumentUploadProps {
 
 export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUpload }) => {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -28,33 +27,15 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUpload }) => {
     const pdfFile = files.find(file => file.type === 'application/pdf');
     
     if (pdfFile) {
-      handleUpload(pdfFile);
+      onUpload(pdfFile);
     }
-  }, []);
+  }, [onUpload]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'application/pdf') {
-      handleUpload(file);
+      onUpload(file);
     }
-  };
-
-  const handleUpload = (file: File) => {
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          onUpload(file);
-          return 0;
-        }
-        return prev + 10;
-      });
-    }, 200);
   };
 
   return (
@@ -71,43 +52,27 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUpload }) => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {isUploading ? (
-          <div className="space-y-4">
-            <div className="animate-spin mx-auto w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">Uploading...</p>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500">{uploadProgress}%</p>
-            </div>
+        <div className="space-y-4">
+          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+          <div>
+            <p className="text-lg font-medium text-gray-900">Drop your PDF here</p>
+            <p className="text-sm text-gray-500 mt-1">or click to browse files</p>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            <div>
-              <p className="text-lg font-medium text-gray-900">Drop your PDF here</p>
-              <p className="text-sm text-gray-500 mt-1">or click to browse files</p>
-            </div>
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileSelect}
-              className="hidden"
-              id="file-upload"
-            />
-            <label
-              htmlFor="file-upload"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Choose PDF File
-            </label>
-          </div>
-        )}
+          <input
+            type="file"
+            accept=".pdf"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="file-upload"
+          />
+          <label
+            htmlFor="file-upload"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Choose PDF File
+          </label>
+        </div>
       </div>
       
       <p className="text-xs text-gray-500 mt-3">

@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import type { Document } from '@/pages/Index';
+import { Document } from '../pages/Index';
 
 interface DocumentLibraryProps {
   documents: Document[];
@@ -31,7 +32,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
       case 'ready':
         return 'Ready';
       case 'error':
-        return 'Error';
+        return 'Upload failed';
     }
   };
 
@@ -49,15 +50,21 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
           documents.map((document) => (
             <div
               key={document.id}
-              className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
+              className={`p-4 rounded-lg border transition-all duration-200 ${
+                document.status === 'ready' ? 'cursor-pointer' : 'cursor-not-allowed'
+              } ${
                 selectedDocument?.id === document.id
                   ? 'border-blue-500 bg-blue-50'
+                  : document.status === 'error'
+                  ? 'border-red-300 bg-red-50'
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
               onClick={() => document.status === 'ready' && onSelectDocument(document)}
             >
               <div className="flex items-start space-x-3">
-                <FileText className="h-5 w-5 text-gray-600 mt-0.5" />
+                <FileText className={`h-5 w-5 mt-0.5 ${
+                  document.status === 'error' ? 'text-red-600' : 'text-gray-600'
+                }`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {document.name}
@@ -68,7 +75,9 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
                   </div>
                   <div className="flex items-center space-x-2 mt-2">
                     {getStatusIcon(document.status)}
-                    <span className="text-xs text-gray-600">
+                    <span className={`text-xs ${
+                      document.status === 'error' ? 'text-red-600' : 'text-gray-600'
+                    }`}>
                       {getStatusText(document.status)}
                     </span>
                   </div>

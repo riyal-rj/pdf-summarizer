@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 
 class Document(BaseModel):
-    id:int
-    filename:str
-    upload_date:str
+    id: int
+    filename: str
+    upload_date: str
 
-class SummarizerRequest(BaseModel):
-    document_id:int
+class QuestionRequest(BaseModel):
+    document_id: int
+    question: str
 
-class SummaryResponse(BaseModel):
-    summary:str
+class AnswerResponse(BaseModel):
+    answer: str

@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { DocumentUpload } from '../components/DocumentUpload';
 import { DocumentLibrary } from '../components/DocumentLibrary';
 import { ChatInterface } from '../components/ChatInterface';
 import { Header } from '../components/Header';
+import { apiService, ApiDocument } from '../services/api';
+import { useToast } from '../hooks/use-toast';
 
 export interface Document {
   id: string;
@@ -20,21 +23,44 @@ export interface ChatMessage {
 }
 
 const Index = () => {
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: '1',
-      name: 'sample-document.pdf',
-      uploadDate: '2024-06-13',
-      size: '2.4 MB',
-      status: 'ready'
-    }
-  ]);
-  
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(documents[0]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleDocumentUpload = (file: File) => {
+  // Load documents on component mount
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  const loadDocuments = async () => {
+    try {
+      const apiDocs = await apiService.getDocuments();
+      const formattedDocs: Document[] = apiDocs.map((doc: ApiDocument) => ({
+        id: doc.id.toString(),
+        name: doc.filename,
+        uploadDate: new Date(doc.upload_date).toISOString().split('T')[0],
+        size: 'N/A', // Size not provided by API
+        status: 'ready' as const
+      }));
+      setDocuments(formattedDocs);
+      
+      // Set first document as selected if none selected
+      if (!selectedDocument && formattedDocs.length > 0) {
+        setSelectedDocument(formattedDocs[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load documents",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDocumentUpload = async (file: File) => {
     const newDocument: Document = {
       id: Date.now().toString(),
       name: file.name,
@@ -44,13 +70,38 @@ const Index = () => {
     };
     
     setDocuments(prev => [...prev, newDocument]);
-    
-    // Simulate processing
-    setTimeout(() => {
+
+    try {
+      const uploadResponse = await apiService.uploadDocument(file);
+      
+      // Update document with real ID and mark as ready
       setDocuments(prev => prev.map(doc => 
-        doc.id === newDocument.id ? { ...doc, status: 'ready' } : doc
+        doc.id === newDocument.id 
+          ? { ...doc, id: uploadResponse.id.toString(), status: 'ready' }
+          : doc
       ));
-    }, 3000);
+
+      toast({
+        title: "Success",
+        description: "Document uploaded successfully",
+      });
+
+      // Reload documents to ensure consistency
+      await loadDocuments();
+    } catch (error) {
+      console.error('Upload failed:', error);
+      
+      // Mark document as error
+      setDocuments(prev => prev.map(doc => 
+        doc.id === newDocument.id ? { ...doc, status: 'error' } : doc
+      ));
+
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload document",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleQuestionSubmit = async (question: string) => {
@@ -66,18 +117,46 @@ const Index = () => {
     setChatMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await apiService.askQuestion({
+        document_id: parseInt(selectedDocument.id),
+        question: question
+      });
+
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `Based on the content of "${selectedDocument.name}", here's what I found: This is a mock response demonstrating how the AI would analyze your document and provide relevant answers to your questions.`,
+        content: response.answer,
         timestamp: new Date().toISOString()
       };
       
       setChatMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Question failed:', error);
+      
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: `Sorry, I encountered an error while processing your question: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date().toISOString()
+      };
+      
+      setChatMessages(prev => [...prev, errorMessage]);
+
+      toast({
+        title: "Question Failed",
+        description: error instanceof Error ? error.message : "Failed to process question",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
+  };
+
+  const handleDocumentSelect = (document: Document) => {
+    setSelectedDocument(document);
+    // Clear chat messages when switching documents
+    setChatMessages([]);
   };
 
   return (
@@ -92,7 +171,7 @@ const Index = () => {
             <DocumentLibrary 
               documents={documents}
               selectedDocument={selectedDocument}
-              onSelectDocument={setSelectedDocument}
+              onSelectDocument={handleDocumentSelect}
             />
           </div>
           

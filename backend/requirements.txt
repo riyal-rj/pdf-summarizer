@@ -8,3 +8,6 @@ langchain-community
 mysql-connector-python
 sqlalchemy 
 pymysql
+sentence-transformers
+python-multipart
+torch
