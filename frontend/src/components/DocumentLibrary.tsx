@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import { Document } from '../pages/Index';
+import { Document } from '../hooks/useDocuments';
 
 interface DocumentLibraryProps {
   documents: Document[];

@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = '/api';
 
 export interface ApiDocument {
   id: number;
@@ -22,17 +22,35 @@ export interface AnswerResponse {
 }
 
 class ApiService {
+  private async makeRequest(url: string, options?: RequestInit) {
+    try {
+      console.log(`Making request to: ${url}`);
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+        },
+      });
+      
+      console.log(`Response status: ${response.status}`);
+      return response;
+    } catch (error) {
+      console.error(`Network error for ${url}:`, error);
+      throw new Error(`Cannot connect to backend server. Please ensure the FastAPI backend is running on http://localhost:8000`);
+    }
+  }
+
   async uploadDocument(file: File): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/upload/`, {
+    const response = await this.makeRequest(`${API_BASE_URL}/upload/`, {
       method: 'POST',
       body: formData,
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
       throw new Error(error.detail || 'Upload failed');
     }
 
@@ -40,17 +58,18 @@ class ApiService {
   }
 
   async getDocuments(): Promise<ApiDocument[]> {
-    const response = await fetch(`${API_BASE_URL}/documents/`);
+    const response = await this.makeRequest(`${API_BASE_URL}/documents/`);
     
     if (!response.ok) {
-      throw new Error('Failed to fetch documents');
+      const error = await response.json().catch(() => ({ detail: 'Failed to fetch documents' }));
+      throw new Error(error.detail || 'Failed to fetch documents');
     }
 
     return response.json();
   }
 
   async askQuestion(request: QuestionRequest): Promise<AnswerResponse> {
-    const response = await fetch(`${API_BASE_URL}/ask/`, {
+    const response = await this.makeRequest(`${API_BASE_URL}/ask/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,11 +78,21 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ detail: 'Question failed' }));
       throw new Error(error.detail || 'Question failed');
     }
 
     return response.json();
+  }
+
+  // Health check method to test backend connectivity
+  async healthCheck(): Promise<boolean> {
+    try {
+      const response = await this.makeRequest(`${API_BASE_URL}/documents/`);
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 }
 
