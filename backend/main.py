@@ -10,10 +10,10 @@ load_dotenv()
 
 app = FastAPI(title="PDF Question-Answering Backend")
 
-# CORS setup for frontend
+# CORS setup for frontend - Allow all origins for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,4 +32,8 @@ app.include_router(document_router, prefix="/api")
 
 @app.get("/")
 async def root():
-    return {"message": "PDF Question-Answering Backend"}
+    return {"message": "PDF Question-Answering Backend", "status": "running"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
